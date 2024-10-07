@@ -1,6 +1,7 @@
 import { Props, Key, Ref } from "../shared/ReactTypes";
 import { WorkTag } from "./workTags";
 import { Flags, NoFlags } from "./fiberFlags";
+import { Container } from "./hostConfig";
 
 export class FiberNode {
   type: any;
@@ -15,8 +16,12 @@ export class FiberNode {
   child: FiberNode | null;
   index: number;
   memoizedProps: Props | null;
+  // 更新完的状态
+  memoizeState: any;
   alternate: FiberNode | null;
   flags: Flags;
+  // 更新队列
+  updateQueue: unknown;
 
   constructor(tag: WorkTag, pendingProps: Props, key: Key) {
     this.tag = tag;
@@ -32,7 +37,7 @@ export class FiberNode {
     this.child = null;
     this.index = 0;
 
-    this.ref = null;
+    this.ref = null!;
 
     // Working unit
     this.pendingProps = pendingProps;
@@ -41,6 +46,9 @@ export class FiberNode {
     this.alternate = null;
     // Flags are initially no operations pending
     this.flags = NoFlags;
+
+    this.memoizeState = null;
+    this.updateQueue = null;
   }
 
   // Other methods commonly part of the FiberNode class
@@ -68,3 +76,41 @@ export class FiberNode {
     return cloned;
   }
 }
+
+export class FiberRootNode {
+  container: Container;
+  current: FiberNode;
+  finishedWork: FiberNode | null;
+  constructor(container: Container, hostRootFiber: FiberNode) {
+    this.container = container;
+    this.current = hostRootFiber;
+    hostRootFiber.stateNode = this;
+    this.finishedWork = null;
+  }
+}
+
+export const createWorkInProgress = (
+  current: FiberNode,
+  pendingProps: Props
+): FiberNode => {
+  let wip = current.alternate;
+  if (wip === null) {
+    // mount
+    wip = new FiberNode(current.tag, pendingProps, current.key);
+
+    wip.stateNode = current.stateNode;
+    wip.alternate = current;
+    current.alternate = wip;
+  } else {
+    // update
+    wip.pendingProps = pendingProps;
+    wip.flags = NoFlags;
+  }
+  wip.type = current.type;
+  wip.updateQueue = current.updateQueue;
+  wip.child = current.child;
+  wip.memoizeState = current.memoizeState;
+  wip.memoizedProps = wip.memoizedProps;
+
+  return wip;
+};

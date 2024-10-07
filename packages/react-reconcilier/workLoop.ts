@@ -1,13 +1,15 @@
 import { beginWork } from "./beginWork";
 import { completeWork } from "./completeWork";
-import { FiberNode } from "./fiber";
+import { FiberNode, FiberRootNode, createWorkInProgress } from "./fiber";
+import { HostRoot } from "./workTags";
 
 // 当前正在工作的Fiber节点
 let workInProgress: FiberNode | null = null;
 
-function prepareFreshStack(fiber: FiberNode) {
+function prepareFreshStack(root: FiberRootNode) {
   // 初始化工作栈，将传入的fiber作为当前的工作节点
-  workInProgress = fiber;
+  //   workInProgress = fiber;
+  workInProgress = createWorkInProgress(root.current, {});
 }
 
 function completeUnitOfWork(fiber: FiberNode) {
@@ -60,4 +62,27 @@ function renderRoot(root: FiberNode) {
       workInProgress = null;
     }
   } while (true); // 如果发生错误，重新进入循环，直到完成工作
+}
+
+export function scheduleUpdateOnFiber(fiber: FiberNode) {
+  // 正在工作中的树
+  //   workInProgress = fiber;
+  //   // 根节点
+  //   const root = fiber.return as FiberNode;
+  //   renderRoot(root);
+  const root = markUpdateFromFiberRoRoot(fiber);
+  renderRoot(root);
+}
+
+function markUpdateFromFiberRoRoot(fiber: FiberNode) {
+  let node = fiber;
+  let parent = node.return;
+  while (parent !== null) {
+    node = parent;
+    parent = node.return;
+  }
+  if (node.tag === HostRoot) {
+    return node.stateNode;
+  }
+  return null;
 }
