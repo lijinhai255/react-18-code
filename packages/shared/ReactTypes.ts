@@ -8,6 +8,7 @@ export type Key = string | null;
 
 export type Ref = { current: any } | ((instance: any) => void);
 
+export type ReactElementType = ReactElement;
 export interface ReactElement {
   $$typeof: symbol | number;
   type: ElementType;
@@ -16,3 +17,5 @@ export interface ReactElement {
   ref: Ref;
   __mark: "React18源码学习";
 }
+
+export type Action<State> = State | ((prevState: State) => State);

@@ -1,7 +1,8 @@
 import { Props, Key, Ref } from "../shared/ReactTypes";
-import { WorkTag } from "./workTags";
+import { FunctionComponent, HostComponent, WorkTag } from "./workTags";
 import { Flags, NoFlags } from "./fiberFlags";
 import { Container } from "./hostConfig";
+import { ReactElement } from "../../shared/ReactTypes";
 
 export class FiberNode {
   type: any;
@@ -20,6 +21,7 @@ export class FiberNode {
   memoizeState: any;
   alternate: FiberNode | null;
   flags: Flags;
+  subtreeFlags: Flags;
   // 更新队列
   updateQueue: unknown;
 
@@ -49,31 +51,7 @@ export class FiberNode {
 
     this.memoizeState = null;
     this.updateQueue = null;
-  }
-
-  // Other methods commonly part of the FiberNode class
-
-  /**
-   * Marks the work-in-progress tree for a pending update.
-   */
-  markUpdate() {
-    this.flags |= Update;
-  }
-
-  /**
-   * Clones the current FiberNode to create the alternate work-in-progress node.
-   */
-  clone() {
-    const cloned = new FiberNode(this.tag, this.pendingProps, this.key);
-    cloned.stateNode = this.stateNode;
-    cloned.return = this.return;
-    cloned.sibling = this.sibling;
-    cloned.child = this.child;
-    cloned.index = this.index;
-    cloned.memoizedProps = this.memoizedProps;
-    cloned.alternate = this;
-    cloned.flags = this.flags;
-    return cloned;
+    this.subtreeFlags = NoFlags;
   }
 }
 
@@ -105,6 +83,7 @@ export const createWorkInProgress = (
     // update
     wip.pendingProps = pendingProps;
     wip.flags = NoFlags;
+    wip.subtreeFlags = NoFlags;
   }
   wip.type = current.type;
   wip.updateQueue = current.updateQueue;
@@ -113,4 +92,17 @@ export const createWorkInProgress = (
   wip.memoizedProps = wip.memoizedProps;
 
   return wip;
+};
+
+export const createFiberFromElement = (element: ReactElement) => {
+  const { type, key, props } = element;
+  let fiberTag: WorkTag = FunctionComponent;
+  if (typeof type === "string") {
+    fiberTag = HostComponent;
+  } else if (typeof type !== "function" && __DEV__) {
+    console.warn("createFiberFrimElement未实现的类型");
+  }
+  const fiber = new FiberNode(fiberTag, props, key);
+  fiber.type = type;
+  return fiber;
 };
